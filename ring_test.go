@@ -3,6 +3,7 @@ package dallimin_test
 import (
 	"encoding/json"
 	"io/ioutil"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -13,6 +14,7 @@ import (
 type Result struct {
 	Server string `json:"server"`
 	Key    string `json:"key"`
+	Weight int    `json:"weight"`
 }
 
 type Fixture struct {
@@ -42,6 +44,30 @@ func panicErr(err error) {
 func TestPickServer(t *testing.T) {
 	f := loadFixture("fixtures/keys.json")
 	h, _ := dallimin.New(f.Servers)
+
+	for _, data := range f.Results {
+		addr, err := h.PickServer(data.Key)
+		server := strings.Split(data.Server, ":")
+
+		assert.Nil(t, err)
+		assert.Equal(t, "127.0.0.1:"+server[1], addr.String())
+	}
+}
+
+func TestPickServer_withWeights(t *testing.T) {
+	f := loadFixture("fixtures/keys-with-weights.json")
+	s := map[string]int{}
+
+	for _, server := range f.Servers {
+		w := strings.Split(server, ":")[2]
+		v := strings.TrimSuffix(server, ":"+w)
+
+		n, _ := strconv.Atoi(w)
+
+		s[v] = n
+	}
+
+	h, _ := dallimin.NewWithWeights(s)
 
 	for _, data := range f.Results {
 		addr, err := h.PickServer(data.Key)

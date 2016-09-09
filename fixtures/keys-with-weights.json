@@ -3,37 +3,37 @@
     {
       "key": "api:foo",
       "server": "cache1.lvh.me:11210",
-      "weight": 1
+      "weight": 20
     },
     {
       "key": "api:foo:bar",
       "server": "cache3.lvh.me:11212",
-      "weight": 1
+      "weight": 10
     },
     {
       "key": "api:bar",
-      "server": "cache1.lvh.me:11210",
-      "weight": 1
+      "server": "cache2.lvh.me:11211",
+      "weight": 25
     },
     {
       "key": "api:bar:foo",
       "server": "cache2.lvh.me:11211",
-      "weight": 1
+      "weight": 25
     },
     {
       "key": "foo:info",
       "server": "cache3.lvh.me:11212",
-      "weight": 1
+      "weight": 10
     },
     {
       "key": "foo:info/bar",
       "server": "cache2.lvh.me:11211",
-      "weight": 1
+      "weight": 25
     },
     {
       "key": "foo:info/baz",
       "server": "cache1.lvh.me:11210",
-      "weight": 1
+      "weight": 20
     }
   ],
   "keys": [
@@ -46,8 +46,8 @@
     "foo:info/baz"
   ],
   "servers": [
-    "cache1.lvh.me:11210",
-    "cache2.lvh.me:11211",
-    "cache3.lvh.me:11212"
+    "cache1.lvh.me:11210:20",
+    "cache2.lvh.me:11211:25",
+    "cache3.lvh.me:11212:10"
   ]
 }
