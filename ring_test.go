@@ -41,7 +41,7 @@ func panicErr(err error) {
 
 func TestPickServer(t *testing.T) {
 	f := loadFixture("fixtures/keys.json")
-	h := dallimin.New(f.Servers)
+	h, _ := dallimin.New(f.Servers)
 
 	for _, data := range f.Results {
 		addr, err := h.PickServer(data.Key)
@@ -54,7 +54,7 @@ func TestPickServer(t *testing.T) {
 
 func TestPickServer_singleServer(t *testing.T) {
 	s := []string{"127.0.0.1:11211"}
-	h := dallimin.New(s)
+	h, _ := dallimin.New(s)
 
 	addr, err := h.PickServer("api:foo")
 
@@ -64,7 +64,7 @@ func TestPickServer_singleServer(t *testing.T) {
 
 func TestPickServer_noServer(t *testing.T) {
 	s := []string{}
-	h := dallimin.New(s)
+	h, _ := dallimin.New(s)
 
 	addr, err := h.PickServer("api:foo")
 

@@ -24,6 +24,7 @@ var (
 
 type Node struct {
 	Label  string
+	Addr   net.Addr
 	Weight int
 }
 
@@ -33,6 +34,7 @@ type Entry struct {
 }
 
 type Ring struct {
+	addrs []net.Addr
 	rings entries
 }
 
@@ -42,36 +44,61 @@ func (c entries) Less(i, j int) bool { return c[i].Point < c[j].Point }
 func (c entries) Len() int           { return len(c) }
 func (c entries) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
 
-func New(servers []string) *Ring {
+func New(servers []string) (*Ring, error) {
 	h := &Ring{}
 
 	if len(servers) == 0 {
-		return h
+		return h, nil
 	}
 
 	if len(servers) == 1 {
-		h.rings = append(h.rings, buildEntry(servers[0], 1, 0))
+		server := servers[0]
 
-		return h
+		addr, err := nodeAddr(server)
+		if err != nil {
+			return nil, err
+		}
+
+		h.addrs = append(h.addrs, addr)
+		h.rings = append(h.rings, buildEntry(server, addr, 1, 0))
+
+		return h, nil
 	}
 
 	totalWeight := len(servers)
 	totalServers := len(servers)
 
 	var rings entries
+	var addrs []net.Addr
 
 	for _, server := range servers {
 		weight := 1
 		count := entryCount(weight, totalServers, totalWeight)
 
-		for i := 0; i < count; i++ {
-			rings = append(rings, buildEntry(server, weight, i))
+		addr, err := nodeAddr(server)
+		if err != nil {
+			return nil, err
 		}
+
+		for i := 0; i < count; i++ {
+			rings = append(rings, buildEntry(server, addr, weight, i))
+		}
+
+		addrs = append(addrs, addr)
 	}
 
 	sort.Sort(rings)
 
-	return &Ring{rings: rings}
+	return &Ring{addrs: addrs, rings: rings}, nil
+}
+
+func (h *Ring) Each(f func(net.Addr) error) error {
+	for _, a := range h.addrs {
+		if err := f(a); nil != err {
+			return err
+		}
+	}
+	return nil
 }
 
 func (h *Ring) PickServer(key string) (net.Addr, error) {
@@ -80,13 +107,13 @@ func (h *Ring) PickServer(key string) (net.Addr, error) {
 	}
 
 	if len(h.rings) == 1 {
-		return nodeAddr(h.rings[0].Node.Label)
+		return h.rings[0].Node.Addr, nil
 	}
 
 	x := hash(key)
 	i := search(h.rings, x)
 
-	return nodeAddr(h.rings[i].Node.Label)
+	return h.rings[i].Node.Addr, nil
 }
 
 func hash(key string) uint {
@@ -136,10 +163,10 @@ func search(ring entries, h uint) uint {
 	}
 }
 
-func buildEntry(server string, weight int, index int) Entry {
+func buildEntry(label string, addr net.Addr, weight int, index int) Entry {
 	return Entry{
-		Node:  Node{Label: server, Weight: weight},
-		Point: serverPoint(server, index),
+		Node:  Node{Addr: addr, Weight: weight},
+		Point: serverPoint(label, index),
 	}
 }
 
