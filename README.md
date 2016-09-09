@@ -1,6 +1,7 @@
 # dallimin
 
 [![Build Status](https://travis-ci.org/subosito/dallimin.svg?branch=master)](https://travis-ci.org/subosito/dallimin)
+[![GoDoc](https://godoc.org/github.com/subosito/dallimin?status.svg)](https://godoc.org/github.com/subosito/dallimin)
 
 Dalli Ring written in Go.
 
