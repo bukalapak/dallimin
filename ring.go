@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 const (
@@ -35,6 +36,7 @@ type entry struct {
 }
 
 type Ring struct {
+	mu    sync.Mutex
 	addrs []net.Addr
 	rings entries
 }
@@ -69,6 +71,9 @@ func NewWithWeights(servers map[string]int) (*Ring, error) {
 
 // Each iterates over each server calling the given function
 func (h *Ring) Each(f func(net.Addr) error) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
 	for _, a := range h.addrs {
 		if err := f(a); nil != err {
 			return err
@@ -79,6 +84,9 @@ func (h *Ring) Each(f func(net.Addr) error) error {
 
 // PickServer returns the server address that a given item should be shared onto.
 func (h *Ring) PickServer(key string) (net.Addr, error) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
 	if len(h.rings) == 0 {
 		return nil, errNoServers
 	}
