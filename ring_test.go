@@ -51,3 +51,23 @@ func TestPickServer(t *testing.T) {
 		assert.Equal(t, "127.0.0.1:"+server[1], addr.String())
 	}
 }
+
+func TestPickServer_singleServer(t *testing.T) {
+	s := []string{"127.0.0.1:11211"}
+	h := dallimin.New(s)
+
+	addr, err := h.PickServer("api:foo")
+
+	assert.Nil(t, err)
+	assert.Equal(t, "127.0.0.1:11211", addr.String())
+}
+
+func TestPickServer_noServer(t *testing.T) {
+	s := []string{}
+	h := dallimin.New(s)
+
+	addr, err := h.PickServer("api:foo")
+
+	assert.Equal(t, dallimin.ErrNoServers, err)
+	assert.Nil(t, addr)
+}
