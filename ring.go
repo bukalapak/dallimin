@@ -102,8 +102,6 @@ func (h *Ring) PickServer(key string) (net.Addr, error) {
 }
 
 func newRingWeights(ss []string, sw []int) (*Ring, error) {
-	h := &Ring{}
-
 	if len(sw) == 1 {
 		server := ss[0]
 		weight := sw[0]
@@ -113,6 +111,7 @@ func newRingWeights(ss []string, sw []int) (*Ring, error) {
 			return nil, err
 		}
 
+		h := &Ring{}
 		h.addrs = append(h.addrs, addr)
 		h.rings = append(h.rings, buildEntry(server, addr, weight, 0))
 
