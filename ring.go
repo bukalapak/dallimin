@@ -50,9 +50,7 @@ func New(servers []string) *Ring {
 	}
 
 	if len(servers) == 1 {
-		node := Node{Label: servers[0], Weight: 1}
-		entry := Entry{Node: node, Point: 0}
-		h.rings = append(h.rings, entry)
+		h.rings = append(h.rings, buildEntry(servers[0], 1, 0))
 
 		return h
 	}
@@ -67,11 +65,7 @@ func New(servers []string) *Ring {
 		count := entryCount(weight, totalServers, totalWeight)
 
 		for i := 0; i < count; i++ {
-			point := serverPoint(server, i)
-			Node := Node{Label: server, Weight: weight}
-			entry := Entry{Node: Node, Point: point}
-
-			rings = append(rings, entry)
+			rings = append(rings, buildEntry(server, weight, i))
 		}
 	}
 
@@ -89,13 +83,13 @@ func (h *Ring) PickServer(key string) (net.Addr, error) {
 		return nodeAddr(h.rings[0].Node.Label)
 	}
 
-	x := h.Hash(key)
+	x := hash(key)
 	i := search(h.rings, x)
 
 	return nodeAddr(h.rings[i].Node.Label)
 }
 
-func (h *Ring) Hash(key string) uint {
+func hash(key string) uint {
 	return uint(crc32.ChecksumIEEE([]byte(key)))
 }
 
@@ -139,6 +133,13 @@ func search(ring entries, h uint) uint {
 		if lowp > highp {
 			return 0
 		}
+	}
+}
+
+func buildEntry(server string, weight int, index int) Entry {
+	return Entry{
+		Node:  Node{Label: server, Weight: weight},
+		Point: serverPoint(server, index),
 	}
 }
 
