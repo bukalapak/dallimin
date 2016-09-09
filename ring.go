@@ -22,15 +22,15 @@ var (
 	ErrNoServers = errors.New("memcache: no servers configured or available")
 )
 
-type Node struct {
-	Label  string
-	Addr   net.Addr
-	Weight int
+type node struct {
+	label  string
+	addr   net.Addr
+	weight int
 }
 
-type Entry struct {
-	Node  Node
-	Point uint
+type entry struct {
+	node  node
+	point uint
 }
 
 type Ring struct {
@@ -38,9 +38,9 @@ type Ring struct {
 	rings entries
 }
 
-type entries []Entry
+type entries []entry
 
-func (c entries) Less(i, j int) bool { return c[i].Point < c[j].Point }
+func (c entries) Less(i, j int) bool { return c[i].point < c[j].point }
 func (c entries) Len() int           { return len(c) }
 func (c entries) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
 
@@ -81,13 +81,13 @@ func (h *Ring) PickServer(key string) (net.Addr, error) {
 	}
 
 	if len(h.rings) == 1 {
-		return h.rings[0].Node.Addr, nil
+		return h.rings[0].node.addr, nil
 	}
 
 	x := hash(key)
 	i := search(h.rings, x)
 
-	return h.rings[i].Node.Addr, nil
+	return h.rings[i].node.addr, nil
 }
 
 func newRingWeights(ss []string, sw []int) (*Ring, error) {
@@ -172,14 +172,14 @@ func search(ring entries, h uint) uint {
 			return midp - 1
 		}
 
-		midval := ring[midp].Point
+		midval := ring[midp].point
 
 		var midval1 uint
 
 		if midp == 0 {
 			midval1 = 0
 		} else {
-			midval1 = ring[midp-1].Point
+			midval1 = ring[midp-1].point
 		}
 
 		if h <= midval && h > midval1 {
@@ -198,10 +198,10 @@ func search(ring entries, h uint) uint {
 	}
 }
 
-func buildEntry(label string, addr net.Addr, weight int, index int) Entry {
-	return Entry{
-		Node:  Node{Addr: addr, Weight: weight},
-		Point: serverPoint(label, index),
+func buildEntry(label string, addr net.Addr, weight int, index int) entry {
+	return entry{
+		node:  node{addr: addr, weight: weight},
+		point: serverPoint(label, index),
 	}
 }
 
