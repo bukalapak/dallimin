@@ -94,6 +94,6 @@ func TestPickServer_noServer(t *testing.T) {
 
 	addr, err := h.PickServer("api:foo")
 
-	assert.Equal(t, dallimin.ErrNoServers, err)
+	assert.NotNil(t, err)
 	assert.Nil(t, addr)
 }
