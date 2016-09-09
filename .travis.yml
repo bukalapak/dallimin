@@ -1,0 +1,5 @@
+language: go
+services: memcache
+before_script:
+  - memcached -p 11210 -d
+  - memcached -p 11212 -d
