@@ -45,51 +45,25 @@ func (c entries) Len() int           { return len(c) }
 func (c entries) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
 
 func New(servers []string) (*Ring, error) {
-	h := &Ring{}
-
 	if len(servers) == 0 {
-		return h, nil
+		return &Ring{}, nil
 	}
 
-	if len(servers) == 1 {
-		server := servers[0]
-
-		addr, err := nodeAddr(server)
-		if err != nil {
-			return nil, err
-		}
-
-		h.addrs = append(h.addrs, addr)
-		h.rings = append(h.rings, buildEntry(server, addr, 1, 0))
-
-		return h, nil
+	sw := make([]int, len(servers))
+	for i := range sw {
+		sw[i] = 1
 	}
 
-	totalWeight := len(servers)
-	totalServers := len(servers)
+	return newRingWeights(servers, sw)
+}
 
-	var rings entries
-	var addrs []net.Addr
-
-	for _, server := range servers {
-		weight := 1
-		count := entryCount(weight, totalServers, totalWeight)
-
-		addr, err := nodeAddr(server)
-		if err != nil {
-			return nil, err
-		}
-
-		for i := 0; i < count; i++ {
-			rings = append(rings, buildEntry(server, addr, weight, i))
-		}
-
-		addrs = append(addrs, addr)
+func NewWithWeights(servers map[string]int) (*Ring, error) {
+	if len(servers) == 0 {
+		return &Ring{}, nil
 	}
 
-	sort.Sort(rings)
-
-	return &Ring{addrs: addrs, rings: rings}, nil
+	ss, sw := extract(servers)
+	return newRingWeights(ss, sw)
 }
 
 func (h *Ring) Each(f func(net.Addr) error) error {
@@ -114,6 +88,67 @@ func (h *Ring) PickServer(key string) (net.Addr, error) {
 	i := search(h.rings, x)
 
 	return h.rings[i].Node.Addr, nil
+}
+
+func newRingWeights(ss []string, sw []int) (*Ring, error) {
+	h := &Ring{}
+
+	if len(sw) == 1 {
+		server := ss[0]
+		weight := sw[0]
+
+		addr, err := nodeAddr(server)
+		if err != nil {
+			return nil, err
+		}
+
+		h.addrs = append(h.addrs, addr)
+		h.rings = append(h.rings, buildEntry(server, addr, weight, 0))
+
+		return h, nil
+	}
+
+	totalWeight := 0
+	totalServers := len(ss)
+
+	for i := range sw {
+		totalWeight += sw[i]
+	}
+
+	var rings entries
+	var addrs []net.Addr
+
+	for i, server := range ss {
+		weight := sw[i]
+		count := entryCount(weight, totalServers, totalWeight)
+
+		addr, err := nodeAddr(server)
+		if err != nil {
+			return nil, err
+		}
+
+		for i := 0; i < count; i++ {
+			rings = append(rings, buildEntry(server, addr, weight, i))
+		}
+
+		addrs = append(addrs, addr)
+	}
+
+	sort.Sort(rings)
+
+	return &Ring{addrs: addrs, rings: rings}, nil
+}
+
+func extract(servers map[string]int) ([]string, []int) {
+	var ss []string
+	var sw []int
+
+	for server, weight := range servers {
+		ss = append(ss, server)
+		sw = append(sw, weight)
+	}
+
+	return ss, sw
 }
 
 func hash(key string) uint {
