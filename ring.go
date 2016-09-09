@@ -1,3 +1,4 @@
+// Package dallimin provides dalli compatible server selector for gomemcache
 package dallimin
 
 import (
@@ -19,7 +20,7 @@ const (
 )
 
 var (
-	ErrNoServers = errors.New("memcache: no servers configured or available")
+	errNoServers = errors.New("memcache: no servers configured or available")
 )
 
 type node struct {
@@ -66,6 +67,7 @@ func NewWithWeights(servers map[string]int) (*Ring, error) {
 	return newRingWeights(ss, sw)
 }
 
+// Each iterates over each server calling the given function
 func (h *Ring) Each(f func(net.Addr) error) error {
 	for _, a := range h.addrs {
 		if err := f(a); nil != err {
@@ -75,9 +77,10 @@ func (h *Ring) Each(f func(net.Addr) error) error {
 	return nil
 }
 
+// PickServer returns the server address that a given item should be shared onto.
 func (h *Ring) PickServer(key string) (net.Addr, error) {
 	if len(h.rings) == 0 {
-		return nil, ErrNoServers
+		return nil, errNoServers
 	}
 
 	if len(h.rings) == 1 {
@@ -155,6 +158,7 @@ func hash(key string) uint {
 	return uint(crc32.ChecksumIEEE([]byte(key)))
 }
 
+// Taken from: https://github.com/dgryski/go-ketama/blob/master/ketama.go
 func search(ring entries, h uint) uint {
 	var maxp = uint(len(ring))
 	var lowp = uint(0)
