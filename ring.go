@@ -21,7 +21,7 @@ const (
 )
 
 var (
-	errNoServers = errors.New("memcache: no servers configured or available")
+	ErrNoServers = errors.New("memcache: no servers configured or available")
 )
 
 type node struct {
@@ -35,10 +35,15 @@ type entry struct {
 	point uint
 }
 
+type Option struct {
+	CheckAlive bool
+}
+
 type Ring struct {
-	mu    sync.Mutex
-	addrs []net.Addr
-	rings entries
+	mu     sync.Mutex
+	addrs  []net.Addr
+	rings  entries
+	option Option
 }
 
 type entries []entry
@@ -47,9 +52,9 @@ func (c entries) Less(i, j int) bool { return c[i].point < c[j].point }
 func (c entries) Len() int           { return len(c) }
 func (c entries) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
 
-func New(servers []string) (*Ring, error) {
+func New(servers []string, option Option) (*Ring, error) {
 	if len(servers) == 0 {
-		return &Ring{}, nil
+		return &Ring{option: option}, nil
 	}
 
 	sw := make([]int, len(servers))
@@ -57,16 +62,16 @@ func New(servers []string) (*Ring, error) {
 		sw[i] = 1
 	}
 
-	return newRingWeights(servers, sw)
+	return newRingWeights(servers, sw, option)
 }
 
-func NewWithWeights(servers map[string]int) (*Ring, error) {
+func NewWithWeights(servers map[string]int, option Option) (*Ring, error) {
 	if len(servers) == 0 {
-		return &Ring{}, nil
+		return &Ring{option: option}, nil
 	}
 
 	ss, sw := extract(servers)
-	return newRingWeights(ss, sw)
+	return newRingWeights(ss, sw, option)
 }
 
 // Each iterates over each server calling the given function
@@ -88,7 +93,7 @@ func (h *Ring) PickServer(key string) (net.Addr, error) {
 	defer h.mu.Unlock()
 
 	if len(h.rings) == 0 {
-		return nil, errNoServers
+		return nil, ErrNoServers
 	}
 
 	if len(h.rings) == 1 {
@@ -97,11 +102,16 @@ func (h *Ring) PickServer(key string) (net.Addr, error) {
 
 	x := hash(key)
 	i := search(h.rings, x)
+	a := h.rings[i].node.addr
 
-	return h.rings[i].node.addr, nil
+	if isAlive(a) {
+		return a, nil
+	}
+
+	return nil, ErrNoServers
 }
 
-func newRingWeights(ss []string, sw []int) (*Ring, error) {
+func newRingWeights(ss []string, sw []int, option Option) (*Ring, error) {
 	if len(sw) == 1 {
 		server := ss[0]
 		weight := sw[0]
@@ -111,7 +121,7 @@ func newRingWeights(ss []string, sw []int) (*Ring, error) {
 			return nil, err
 		}
 
-		h := &Ring{}
+		h := &Ring{option: option}
 		h.addrs = append(h.addrs, addr)
 		h.rings = append(h.rings, buildEntry(server, addr, weight, 0))
 
@@ -238,4 +248,19 @@ func nodeAddr(node string) (net.Addr, error) {
 	}
 
 	return net.ResolveTCPAddr("tcp", node)
+}
+
+func isAlive(addr net.Addr) bool {
+	conn, err := net.Dial(addr.Network(), addr.String())
+	if err != nil {
+		return false
+	}
+	defer conn.Close()
+
+	_, err = conn.Read([]byte{})
+	if err != nil {
+		return false
+	}
+
+	return true
 }

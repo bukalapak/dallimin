@@ -43,7 +43,7 @@ func panicErr(err error) {
 
 func TestPickServer(t *testing.T) {
 	f := loadFixture("fixtures/keys.json")
-	h, _ := dallimin.New(f.Servers)
+	h, _ := dallimin.New(f.Servers, dallimin.Option{})
 
 	for _, data := range f.Results {
 		addr, err := h.PickServer(data.Key)
@@ -67,7 +67,7 @@ func TestPickServer_withWeights(t *testing.T) {
 		s[v] = n
 	}
 
-	h, _ := dallimin.NewWithWeights(s)
+	h, _ := dallimin.NewWithWeights(s, dallimin.Option{})
 
 	for _, data := range f.Results {
 		addr, err := h.PickServer(data.Key)
@@ -80,7 +80,7 @@ func TestPickServer_withWeights(t *testing.T) {
 
 func TestPickServer_singleServer(t *testing.T) {
 	s := []string{"127.0.0.1:11211"}
-	h, _ := dallimin.New(s)
+	h, _ := dallimin.New(s, dallimin.Option{})
 
 	addr, err := h.PickServer("api:foo")
 
@@ -90,10 +90,23 @@ func TestPickServer_singleServer(t *testing.T) {
 
 func TestPickServer_noServer(t *testing.T) {
 	s := []string{}
-	h, _ := dallimin.New(s)
+	h, _ := dallimin.New(s, dallimin.Option{})
 
 	addr, err := h.PickServer("api:foo")
 
-	assert.NotNil(t, err)
+	assert.Equal(t, err, dallimin.ErrNoServers)
+	assert.Nil(t, addr)
+}
+
+func TestPickServer_whenNoServerAlive(t *testing.T) {
+	s := []string{
+		"127.0.0.1:12345",
+		"127.0.0.1:12346",
+	}
+
+	h, _ := dallimin.New(s, dallimin.Option{})
+
+	addr, err := h.PickServer("api:foo")
+	assert.Equal(t, err, dallimin.ErrNoServers)
 	assert.Nil(t, addr)
 }
