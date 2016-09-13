@@ -104,7 +104,7 @@ func TestPickServer_whenNoServerAlive(t *testing.T) {
 		"127.0.0.1:12346",
 	}
 
-	h, _ := dallimin.New(s, dallimin.Option{})
+	h, _ := dallimin.New(s, dallimin.Option{CheckAlive: true})
 
 	addr, err := h.PickServer("api:foo")
 	assert.Equal(t, err, dallimin.ErrNoServers)

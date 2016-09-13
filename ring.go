@@ -37,6 +37,7 @@ type entry struct {
 
 type Option struct {
 	CheckAlive bool
+	Failover   bool
 }
 
 type Ring struct {
@@ -100,16 +101,29 @@ func (h *Ring) PickServer(key string) (net.Addr, error) {
 		return h.rings[0].node.addr, nil
 	}
 
+	return h.pickServer(key)
+}
+
+func (h *Ring) pickServer(key string) (net.Addr, error) {
 	x := hash(key)
-	i := search(h.rings, x)
-	a := h.rings[i].node.addr
 
-	if !h.option.CheckAlive {
-		return a, nil
-	}
+	for i := 0; i < 20; i++ {
+		n := search(h.rings, x)
+		a := h.rings[n].node.addr
 
-	if isAlive(a) {
-		return a, nil
+		if !h.option.CheckAlive {
+			return a, nil
+		}
+
+		if isAlive(a) {
+			return a, nil
+		}
+
+		if !h.option.Failover {
+			break
+		}
+
+		x = hash(fmt.Sprintf("%d%s", i, key))
 	}
 
 	return nil, ErrNoServers
@@ -160,7 +174,7 @@ func newRingWeights(ss []string, sw []int, option Option) (*Ring, error) {
 
 	sort.Sort(rings)
 
-	return &Ring{addrs: addrs, rings: rings}, nil
+	return &Ring{addrs: addrs, rings: rings, option: option}, nil
 }
 
 func extract(servers map[string]int) ([]string, []int) {
