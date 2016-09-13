@@ -104,6 +104,10 @@ func (h *Ring) PickServer(key string) (net.Addr, error) {
 	i := search(h.rings, x)
 	a := h.rings[i].node.addr
 
+	if !h.option.CheckAlive {
+		return a, nil
+	}
+
 	if isAlive(a) {
 		return a, nil
 	}
