@@ -110,3 +110,29 @@ func TestPickServer_whenNoServerAlive(t *testing.T) {
 	assert.Equal(t, err, dallimin.ErrNoServers)
 	assert.Nil(t, addr)
 }
+
+func TestPickServer_whenAtLeastOneAlive(t *testing.T) {
+	s := []string{
+		"127.0.0.1:12345",
+		"127.0.0.1:11211",
+	}
+
+	h, _ := dallimin.New(s, dallimin.Option{CheckAlive: true})
+
+	addr, err := h.PickServer("api:foo")
+	assert.Nil(t, err)
+	assert.Equal(t, addr.String(), "127.0.0.1:11211")
+}
+
+func TestPickServer_checkAliveAndfailover(t *testing.T) {
+	s := []string{
+		"127.0.0.1:12346",
+		"127.0.0.1:11210",
+	}
+
+	h, _ := dallimin.New(s, dallimin.Option{CheckAlive: true, Failover: true})
+
+	addr, err := h.PickServer("api:foo")
+	assert.Nil(t, err)
+	assert.Equal(t, addr.String(), "127.0.0.1:11210")
+}
