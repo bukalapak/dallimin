@@ -50,11 +50,18 @@ func checkErr(err error) {
 }
 
 func main() {
-	ss, err := dallimin.New([]string{
+    option := dallimin.Option{
+        CheckAlive: true,
+        Failover: true,
+    }
+
+	servers := []string{
 		"cache1.example.com:11210",
 		"cache2.example.com:11211",
 		"cache3.example.com:11212",
-	})
+	}
+
+    ss, err := dallimin.New(servers, option)
 
 	checkErr(err)
 
