@@ -58,12 +58,7 @@ func New(servers []string, option Option) (*Ring, error) {
 		return &Ring{option: option}, nil
 	}
 
-	sw := make([]int, len(servers))
-	for i := range sw {
-		sw[i] = 1
-	}
-
-	return newRingWeights(servers, sw, option)
+	return NewWithWeights(mapServer(servers), option)
 }
 
 func NewWithWeights(servers map[string]int, option Option) (*Ring, error) {
@@ -187,6 +182,24 @@ func extract(servers map[string]int) ([]string, []int) {
 	}
 
 	return ss, sw
+}
+
+func mapServer(ss []string) map[string]int {
+	ms := map[string]int{}
+
+	for _, s := range ss {
+		w := 1
+		q := strings.SplitN(s, ":", 3)
+
+		if len(q) == 3 {
+			w, _ = strconv.Atoi(q[2])
+			s = strings.Join(q[:2], ":")
+		}
+
+		ms[s] = w
+	}
+
+	return ms
 }
 
 func hash(key string) uint {

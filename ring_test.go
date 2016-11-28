@@ -54,6 +54,19 @@ func TestPickServer(t *testing.T) {
 	}
 }
 
+func TestPickServer_inlineWeights(t *testing.T) {
+	f := loadFixture("fixtures/keys-with-weights.json")
+	h, _ := dallimin.New(f.Servers, dallimin.Option{})
+
+	for _, data := range f.Results {
+		addr, err := h.PickServer(data.Key)
+		server := strings.Split(data.Server, ":")
+
+		assert.Nil(t, err)
+		assert.Equal(t, "127.0.0.1:"+server[1], addr.String())
+	}
+}
+
 func TestPickServer_withWeights(t *testing.T) {
 	f := loadFixture("fixtures/keys-with-weights.json")
 	s := map[string]int{}
