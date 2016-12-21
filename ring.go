@@ -88,15 +88,17 @@ func (h *Ring) PickServer(key string) (net.Addr, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	if len(h.rings) == 0 {
+	n := len(h.rings)
+
+	if n == 0 {
 		return nil, ErrNoServers
 	}
 
-	if len(h.rings) == 1 {
+	if n == 1 {
 		return h.rings[0].node.addr, nil
 	}
 
-	return h.pickServer(key)
+	return h.pickServer(key, n)
 }
 
 // Servers return available server addresses
@@ -104,17 +106,16 @@ func (h *Ring) Servers() []net.Addr {
 	return h.addrs
 }
 
-func (h *Ring) pickServer(key string) (a net.Addr, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = ErrNoServers
-		}
-	}()
-
+func (h *Ring) pickServer(key string, z int) (a net.Addr, err error) {
 	x := hash(key)
 
 	for i := 0; i < 20; i++ {
 		n := search(h.rings, x)
+
+		if n >= uint(z) {
+			break
+		}
+
 		a := h.rings[n].node.addr
 
 		if !h.option.CheckAlive {
