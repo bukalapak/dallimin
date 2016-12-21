@@ -104,7 +104,13 @@ func (h *Ring) Servers() []net.Addr {
 	return h.addrs
 }
 
-func (h *Ring) pickServer(key string) (net.Addr, error) {
+func (h *Ring) pickServer(key string) (a net.Addr, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = ErrNoServers
+		}
+	}()
+
 	x := hash(key)
 
 	for i := 0; i < 20; i++ {
