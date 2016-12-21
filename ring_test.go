@@ -41,6 +41,25 @@ func panicErr(err error) {
 	}
 }
 
+func TestServers(t *testing.T) {
+	f := loadFixture("fixtures/keys.json")
+	h, _ := dallimin.New(f.Servers, dallimin.Option{})
+
+	ms := []string{}
+
+	for _, addr := range h.Servers() {
+		ms = append(ms, addr.String())
+	}
+
+	xs := []string{
+		"127.0.0.1:11210",
+		"127.0.0.1:11211",
+		"127.0.0.1:11212",
+	}
+
+	assert.Equal(t, xs, ms)
+}
+
 func TestPickServer(t *testing.T) {
 	f := loadFixture("fixtures/keys.json")
 	h, _ := dallimin.New(f.Servers, dallimin.Option{})

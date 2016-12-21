@@ -99,6 +99,11 @@ func (h *Ring) PickServer(key string) (net.Addr, error) {
 	return h.pickServer(key)
 }
 
+// Servers return available server addresses
+func (h *Ring) Servers() []net.Addr {
+	return h.addrs
+}
+
 func (h *Ring) pickServer(key string) (net.Addr, error) {
 	x := hash(key)
 
