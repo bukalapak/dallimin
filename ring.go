@@ -108,12 +108,16 @@ func (h *Ring) Servers() []net.Addr {
 
 func (h *Ring) pickServer(key string, z int) (a net.Addr, err error) {
 	x := hash(key)
+	c := func(key string, i int) uint {
+		return hash(fmt.Sprintf("%d%s", i, key))
+	}
 
 	for i := 0; i < 20; i++ {
 		n := search(h.rings, x)
 
-		if n >= uint(z) {
-			break
+		if n >= uint(z) && h.option.Failover {
+			x = c(key, i)
+			continue
 		}
 
 		a := h.rings[n].node.addr
@@ -130,7 +134,7 @@ func (h *Ring) pickServer(key string, z int) (a net.Addr, err error) {
 			break
 		}
 
-		x = hash(fmt.Sprintf("%d%s", i, key))
+		x = c(key, i)
 	}
 
 	return nil, ErrNoServers
