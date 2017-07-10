@@ -40,7 +40,7 @@ import (
 	"fmt"
 
 	"github.com/bradfitz/gomemcache/memcache"
-	"github.com/subosito/dallimin"
+	"github.com/bukalapak/dallimin"
 )
 
 func checkErr(err error) {

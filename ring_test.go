@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bukalapak/dallimin"
 	"github.com/stretchr/testify/assert"
-	"github.com/subosito/dallimin"
 )
 
 type Result struct {
